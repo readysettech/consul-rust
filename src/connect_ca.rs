@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::errors::Result;
@@ -38,30 +39,41 @@ pub struct CARoot {
 }
 
 #[allow(clippy::upper_case_acronyms)]
+#[async_trait]
 pub trait ConnectCA {
-    fn ca_roots(&self, q: Option<&QueryOptions>) -> Result<(CARootList, QueryMeta)>;
-    fn ca_get_config(&self, q: Option<&QueryOptions>) -> Result<(CAConfig, QueryMeta)>;
-    fn ca_set_config(&self, conf: &CAConfig, q: Option<&WriteOptions>) -> Result<((), WriteMeta)>;
+    async fn ca_roots(&self, q: Option<&QueryOptions>) -> Result<(CARootList, QueryMeta)>;
+    async fn ca_get_config(&self, q: Option<&QueryOptions>) -> Result<(CAConfig, QueryMeta)>;
+    async fn ca_set_config(
+        &self,
+        conf: &CAConfig,
+        q: Option<&WriteOptions>,
+    ) -> Result<((), WriteMeta)>;
 }
 
+#[async_trait]
 impl ConnectCA for Client {
     /// https://www.consul.io/api/connect/ca.html#list-ca-root-certificates
-    fn ca_roots(&self, q: Option<&QueryOptions>) -> Result<(CARootList, QueryMeta)> {
-        get("/v1/connect/ca/roots", &self.config, HashMap::new(), q)
+    async fn ca_roots(&self, q: Option<&QueryOptions>) -> Result<(CARootList, QueryMeta)> {
+        get("/v1/connect/ca/roots", &self.config, HashMap::new(), q).await
     }
 
     /// https://www.consul.io/api/connect/ca.html#get-ca-configuration
-    fn ca_get_config(&self, q: Option<&QueryOptions>) -> Result<(CAConfig, QueryMeta)> {
+    async fn ca_get_config(&self, q: Option<&QueryOptions>) -> Result<(CAConfig, QueryMeta)> {
         get(
             "/v1/connect/ca/configuration",
             &self.config,
             HashMap::new(),
             q,
         )
+        .await
     }
 
     /// https://www.consul.io/api/connect/ca.html#update-ca-configuration
-    fn ca_set_config(&self, conf: &CAConfig, q: Option<&WriteOptions>) -> Result<((), WriteMeta)> {
+    async fn ca_set_config(
+        &self,
+        conf: &CAConfig,
+        q: Option<&WriteOptions>,
+    ) -> Result<((), WriteMeta)> {
         put(
             "/v1/connect/ca/configuration",
             Some(conf),
@@ -69,5 +81,6 @@ impl ConnectCA for Client {
             HashMap::new(),
             q,
         )
+        .await
     }
 }
