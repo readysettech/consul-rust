@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::errors::Result;
-use crate::request::{get, put};
+use crate::request::{get, put_json};
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[derive(Default, Serialize, Deserialize, Debug)]
@@ -74,7 +74,7 @@ impl ConnectCA for Client {
         conf: &CAConfig,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)> {
-        put(
+        put_json(
             "/v1/connect/ca/configuration",
             Some(conf),
             &self.config,

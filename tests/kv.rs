@@ -12,15 +12,15 @@ async fn kv_test() {
 
     let pair = KVPair {
         Key: String::from("testkey"),
-        Value: String::from("testvalue"),
+        Value: String::from("testvalue").into_bytes(),
         ..Default::default()
     };
 
-    assert!(client.put(&pair, None).await.unwrap().0);
+    assert!(client.put(pair, None).await.unwrap().0);
 
     let b64val = client.get("testkey", None).await.unwrap().0.unwrap().Value;
     let bytes = base64::decode(b64val).unwrap();
-    assert_eq!(std::str::from_utf8(&bytes).unwrap(), "\"testvalue\"");
+    assert_eq!(std::str::from_utf8(&bytes).unwrap(), "testvalue");
 
     let r = client.list("t", None).await.unwrap();
     assert!(!r.0.is_empty());

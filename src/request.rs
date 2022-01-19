@@ -152,7 +152,7 @@ pub async fn delete<R: DeserializeOwned>(
     options: Option<&WriteOptions>,
 ) -> Result<(R, WriteMeta)> {
     let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.delete(url) };
-    write_with_body(path, None as Option<&()>, config, params, options, req).await
+    write_with_body(path, None as Option<Vec<u8>>, config, params, options, req).await
 }
 
 /*
@@ -167,16 +167,75 @@ pub fn post<T: Serialize, R: DeserializeOwned>(path: &str,
 */
 pub async fn put<T: Serialize, R: DeserializeOwned>(
     path: &str,
+    body: Option<T>,
+    config: &Config,
+    params: HashMap<String, String>,
+    options: Option<&WriteOptions>,
+) -> Result<(R, WriteMeta)>
+where
+    reqwest::Body: From<T>,
+{
+    let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.put(url) };
+    write_with_body(path, body, config, params, options, req).await
+}
+
+async fn write_with_body<T: Serialize, R: DeserializeOwned, F>(
+    path: &str,
+    body: Option<T>,
+    config: &Config,
+    mut params: HashMap<String, String>,
+    options: Option<&WriteOptions>,
+    req: F,
+) -> Result<(R, WriteMeta)>
+where
+    F: Fn(&HttpClient, Url) -> RequestBuilder,
+    reqwest::Body: From<T>,
+{
+    let start = Instant::now();
+    let datacenter: Option<&String> = options
+        .and_then(|o| o.datacenter.as_ref())
+        .or_else(|| config.datacenter.as_ref());
+
+    if let Some(dc) = datacenter {
+        params.insert(String::from("dc"), dc.to_owned());
+    }
+
+    let url_str = format!("{}{}", config.address, path);
+    let url =
+        Url::parse_with_params(&url_str, params.iter()).chain_err(|| "Failed to parse URL")?;
+    let builder = req(&config.http_client, url);
+    let builder = if let Some(b) = body {
+        builder.body(b)
+    } else {
+        builder
+    };
+    let builder = add_config_options(builder, &config);
+    let res = builder
+        .send()
+        .await
+        .chain_err(|| "HTTP request to consul failed")?;
+    let json = res.json().await.chain_err(|| "Failed to parse JSON")?;
+
+    Ok((
+        json,
+        WriteMeta {
+            request_time: Instant::now() - start,
+        },
+    ))
+}
+
+pub async fn put_json<T: Serialize, R: DeserializeOwned>(
+    path: &str,
     body: Option<&T>,
     config: &Config,
     params: HashMap<String, String>,
     options: Option<&WriteOptions>,
 ) -> Result<(R, WriteMeta)> {
     let req = |http_client: &HttpClient, url: Url| -> RequestBuilder { http_client.put(url) };
-    write_with_body(path, body, config, params, options, req).await
+    write_with_json_body(path, body, config, params, options, req).await
 }
 
-async fn write_with_body<T: Serialize, R: DeserializeOwned, F>(
+async fn write_with_json_body<T: Serialize, R: DeserializeOwned, F>(
     path: &str,
     body: Option<&T>,
     config: &Config,

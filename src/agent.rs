@@ -83,7 +83,7 @@ impl Agent for Client {
     async fn reload(&self) -> Result<()> {
         put(
             "/v1/agent/reload",
-            None as Option<&()>,
+            None as Option<Vec<u8>>,
             &self.config,
             HashMap::new(),
             None,
@@ -106,7 +106,7 @@ impl Agent for Client {
         }
         put(
             "/v1/agent/maintenance",
-            None as Option<&()>,
+            None as Option<Vec<u8>>,
             &self.config,
             params,
             None,
@@ -122,7 +122,7 @@ impl Agent for Client {
             params.insert(String::from("wan"), String::from("true"));
         }
         let path = format!("/v1/agent/join/{}", address);
-        put(&path, None as Option<&()>, &self.config, params, None)
+        put(&path, None as Option<Vec<u8>>, &self.config, params, None)
             .await
             .map(|x| x.0)
     }
@@ -131,7 +131,7 @@ impl Agent for Client {
     async fn leave(&self) -> Result<()> {
         put(
             "/v1/agent/leave",
-            None as Option<&()>,
+            None as Option<Vec<u8>>,
             &self.config,
             HashMap::new(),
             None,
@@ -144,7 +144,7 @@ impl Agent for Client {
     async fn force_leave(&self) -> Result<()> {
         put(
             "/v1/agent/force-leave",
-            None as Option<&()>,
+            None as Option<Vec<u8>>,
             &self.config,
             HashMap::new(),
             None,

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::agent::{AgentCheck, AgentService};
 use crate::errors::Result;
-use crate::request::{get, put};
+use crate::request::{get, put_json};
 use crate::{Client, QueryMeta, QueryOptions, WriteMeta, WriteOptions};
 
 #[derive(Eq, Default, PartialEq, Serialize, Deserialize, Debug)]
@@ -107,7 +107,7 @@ impl Catalog for Client {
         reg: &CatalogRegistration,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)> {
-        put(
+        put_json(
             "/v1/session/create",
             Some(reg),
             &self.config,
@@ -123,7 +123,7 @@ impl Catalog for Client {
         dereg: &CatalogDeregistration,
         q: Option<&WriteOptions>,
     ) -> Result<((), WriteMeta)> {
-        put(
+        put_json(
             "/v1/catalog/deregister",
             Some(dereg),
             &self.config,
